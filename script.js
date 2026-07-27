@@ -125,13 +125,13 @@ class Bird {
     imageHeight = 12,
     canvasX = 50,
     canvasY = 256,
-    yVelocity = 1,
     gravityPower = 0.5,
     airResistance = 0.95,
-    zoom = 1.8,
+    zoom = 2,
     rotation = 0,
-    jump = 12,
+    jump = 9,
     radius = 12,
+    birdHitScale = 0.8,
   ) {
     this.birdImageIndex = 0;
     this.birdImagesCoordinates = [
@@ -144,13 +144,14 @@ class Bird {
     this.imageHeight = imageHeight;
     this.canvasX = canvasX;
     this.canvasY = canvasY;
-    this.yVelocity = yVelocity;
     this.gravityPower = gravityPower;
     this.airResistance = airResistance;
     this.zoom = zoom;
     this.rotation = rotation;
     this.jump = jump;
     this.radius = radius;
+    this.birdHitScale = birdHitScale;
+    this.yVelocity = this.jump * this.airResistance;
   }
   draw() {
     let birdFrame = this.birdImagesCoordinates[this.birdImageIndex];
@@ -227,7 +228,7 @@ class Pipes {
     imageBottomWidth = 26,
     imageBottomHeight = 121,
     xVelocity = 2,
-    gap = 150,
+    gap = 120,
     baseYPosition = -174,
     zoom = 3,
   ) {
@@ -247,8 +248,8 @@ class Pipes {
   }
   draw() {
     this.pipePosition.forEach((pipe) => {
-      this.topYposition = pipe.y;
-      this.bottomYposition =
+      const topYposition = pipe.y;
+      const bottomYposition =
         pipe.y + this.imageTopHeight * this.zoom + this.gap;
       context.drawImage(
         sprite,
@@ -257,7 +258,7 @@ class Pipes {
         this.imageTopWidth,
         this.imageTopHeight,
         pipe.x,
-        this.topYposition,
+        topYposition,
         this.imageTopWidth,
         this.imageTopHeight * this.zoom,
       );
@@ -268,13 +269,40 @@ class Pipes {
         this.imageBottomWidth,
         this.imageBottomHeight,
         pipe.x,
-        this.bottomYposition,
+        bottomYposition,
         this.imageBottomWidth,
         this.imageBottomHeight * this.zoom,
       );
     });
   }
   update() {
+    //   if (pipe.x < -50) {
+    //     this.pipePosition.shift();
+    //   }
+    //   pipe.x -= this.xVelocity;
+
+    // for (let i = 0; i < this.pipePosition.length; i++) {
+    //   let pipe = this.pipePosition[i];
+
+    //   const pipeLeft = pipe.x;
+    //   const pipeRight = pipe.x + pipeWidth;
+
+    //   const isInsidePipe = birdRight >= pipeLeft && birdLeft <= pipeRight;
+
+    //   if (isInsidePipe) {
+    //     const topPipeBottom = pipe.y + this.imageTopHeight * this.zoom;
+    //     const bottomPipeTop = topPipeBottom + this.gap;
+
+    //     const isHitTopPipe = birdTop <= topPipeBottom;
+    //     const isHitBottomPipe = birdBottom >= bottomPipeTop;
+
+    //     if (isHitTopPipe || isHitBottomPipe) {
+    //       gameStates.current = gameStates.gameOver;
+    //       break;
+    //     }
+    //   }
+    // }
+
     if (frames % 100 === 0) {
       this.pipePosition.push({
         x: canvas.width,
@@ -282,26 +310,21 @@ class Pipes {
       });
     }
     const pipeWidth = this.imageTopWidth;
-    const birdWidth = bird.imageWidth * bird.zoom;
-    const birdHeight = bird.imageHeight * bird.zoom;
-    this.pipePosition.forEach((pipe) => {
-      // console.log(bird.yVelocity);
+    const birdWidth = bird.imageWidth * bird.zoom * bird.birdHitScale;
+    const birdHeight = bird.imageHeight * bird.zoom * bird.birdHitScale;
+    const birdLeft = bird.canvasX - birdWidth / 2;
+    const birdRight = bird.canvasX + birdWidth / 2;
+    const birdTop = bird.canvasY - birdHeight / 2;
+    const birdBottom = bird.canvasY + birdHeight / 2;
 
-      const birdLeft = bird.canvasX - birdWidth / 2;
-      const birdRight = bird.canvasX + birdWidth / 2;
-      const birdTop = bird.canvasY - birdHeight / 2;
-      const birdBottom = bird.canvasY + birdHeight;
+    this.pipePosition.forEach((pipe) => {
+      pipe.x -= this.xVelocity;
+    });
+
+    this.pipePosition.some((pipe) => {
       const pipeLeft = pipe.x;
       const pipeRight = pipe.x + pipeWidth;
       const isInsidePipe = birdLeft <= pipeRight && birdRight >= pipeLeft;
-      // console.log(
-      //   birdRight,
-      //   pipeLeft,
-      //   birdWidth,
-      //   birdHeight,
-      //   bird.zoom,
-      //   "koth",
-      // );
       if (isInsidePipe) {
         const topPipeBottom = pipe.y + this.imageTopHeight * this.zoom;
         const isHitTopPipe = birdTop <= topPipeBottom;
@@ -312,30 +335,14 @@ class Pipes {
 
         if (isHitTopPipe || isHitBottomPipe) {
           gameStates.current = gameStates.gameOver;
+          return true;
         }
       }
-
-      // if (
-      //   bird.canvasY + bird.radius * bird.zoom <=
-      //     pipe.y + this.imageTopHeight * this.zoom &&
-      //   bird.canvasX + bird.radius * bird.zoom >= pipe.x &&
-      //   bird.canvasX + bird.radius * bird.zoom <= pipe.x + this.imageTopWidth
-      // ) {
-      //   gameStates.current = gameStates.gameOver;
-      // } else if (
-      //   bird.canvasY + bird.radius * bird.zoom >=
-      //     pipe.y + this.imageTopHeight * this.zoom + this.gap &&
-      //   bird.canvasX + bird.radius * bird.zoom >= pipe.x &&
-      //   bird.canvasX + bird.radius * bird.zoom <= pipe.x + this.imageBottomWidth
-      // ) {
-      //   gameStates.current = gameStates.gameOver;
-      // }
-
-      if (pipe.x < -50) {
-        this.pipePosition.shift();
-      }
-      pipe.x -= this.xVelocity;
     });
+
+    if (this.pipePosition.length > 0 && this.pipePosition[0].x < -100) {
+      this.pipePosition.shift();
+    }
     this.draw();
   }
 }
@@ -524,6 +531,7 @@ function clickHandler() {
       gameStates.current = gameStates.inGame;
       bird = new Bird();
       pipes = new Pipes();
+      bird.yVelocity = -bird.jump * bird.airResistance;
       break;
     case gameStates.inGame:
       bird.rotation = -degree * 35;
@@ -536,9 +544,10 @@ function clickHandler() {
 }
 
 window.addEventListener("keydown", (e) => {
-  if (e.code === "Space") {
-    clickHandler();
-  }
+  clickHandler();
+  // if (e.code === "Space") {
+  //   clickHandler();
+  // }
 });
 window.addEventListener("click", clickHandler); // click logic
 
@@ -550,13 +559,11 @@ function animate() {
     case gameStates.getReady:
       foreground.draw();
       getReady.draw();
-      startButton.draw();
       tap.draw();
       break;
     case gameStates.inGame:
-      // backgroundImage.update();
-      pipes.update();
       bird.update();
+      pipes.update();
       foreground.update();
       frames += 1;
       break;
@@ -566,6 +573,7 @@ function animate() {
       bird.draw();
       gameOver.draw();
       scoreChart.draw();
+      startButton.draw();
       break;
   }
 
@@ -576,4 +584,4 @@ animate();
 
 // drawImage() method in context has 9 parameters:
 
-// context.drawImage(main_img, cutImageFromX, cutImageFromY, cutImageWidth, cutImageHeight, imgCoordinatesInCanvasX, imgCoordinatesInCanvasY , imgCoordinatesInCanvasWidth, imgCoordinatesInCanvasHeight)
+// context.drawImage(main _img, cutImageFromX, cutImageFromY, cutImageWidth, cutImageHeight, imgCoordinatesInCanvasX, imgCoordinatesInCanvasY , imgCoordinatesInCanvasWidth, imgCoordinatesInCanvasHeight)
