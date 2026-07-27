@@ -337,6 +337,9 @@ class Pipes {
           gameStates.current = gameStates.gameOver;
           return true;
         }
+        if (birdLeft == pipeRight) {
+          score.currenValue += 1;
+        }
       }
     });
 
@@ -355,7 +358,7 @@ class GetReady {
     imageHeight = 22,
     canvasX = canvas.width / 2,
     canvasY = canvas.height / 2,
-    zoom = 1.5,
+    zoom = 2,
   ) {
     this.imageX = imageX;
     this.imageY = imageY;
@@ -366,6 +369,7 @@ class GetReady {
     this.zoom = zoom;
   }
   draw() {
+    const YPositionRegulator = 54;
     context.drawImage(
       sprite,
       this.imageX,
@@ -373,7 +377,7 @@ class GetReady {
       this.imageWidth,
       this.imageHeight,
       this.canvasX - (this.imageWidth * this.zoom) / 2,
-      this.canvasY,
+      this.canvasY - YPositionRegulator,
       this.imageWidth * this.zoom,
       this.imageHeight * this.zoom,
     );
@@ -388,7 +392,7 @@ class StartButton {
     imageHeight = 14,
     canvasX = canvas.width / 2,
     canvasY = canvas.height / 2,
-    zoom = 1.5,
+    zoom = 2,
   ) {
     this.imageX = imageX;
     this.imageY = imageY;
@@ -399,6 +403,7 @@ class StartButton {
     this.zoom = zoom;
   }
   draw() {
+    const YPositionRegulator = 110;
     context.drawImage(
       sprite,
       this.imageX,
@@ -406,7 +411,7 @@ class StartButton {
       this.imageWidth,
       this.imageHeight,
       this.canvasX - (this.imageWidth * this.zoom) / 2,
-      this.canvasY,
+      this.canvasY + YPositionRegulator,
       this.imageWidth * this.zoom,
       this.imageHeight * this.zoom,
     );
@@ -417,11 +422,11 @@ class Tap {
   constructor(
     imageX = 172,
     imageY = 122,
-    imageWidth = 36,
+    imageWidth = 39,
     imageHeight = 49,
     canvasX = canvas.width / 2,
     canvasY = canvas.height / 2,
-    zoom = 1.5,
+    zoom = 2,
   ) {
     this.imageX = imageX;
     this.imageY = imageY;
@@ -433,14 +438,16 @@ class Tap {
     this.zoom = zoom;
   }
   draw() {
+    const YPositionRegulator = 40;
+    const XPositionRegulator = 10;
     context.drawImage(
       sprite,
       this.imageX,
       this.imageY,
       this.imageWidth,
       this.imageHeight,
-      this.canvasX - (this.imageWidth * this.zoom) / 2,
-      this.canvasY + this.spaceFromGetReady,
+      this.canvasX - (this.imageWidth * this.zoom) / 2 + XPositionRegulator,
+      this.canvasY + this.spaceFromGetReady - YPositionRegulator,
       this.imageWidth * this.zoom,
       this.imageHeight * this.zoom,
     );
@@ -455,7 +462,7 @@ class GameOver {
     imageHeight = 19,
     canvasX = canvas.width / 2,
     canvasY = canvas.height / 2,
-    zoom = 1.5,
+    zoom = 2,
   ) {
     this.imageX = imageX;
     this.imageY = imageY;
@@ -466,6 +473,113 @@ class GameOver {
     this.zoom = zoom;
   }
   draw() {
+    const YPositionRegulator = 85;
+
+    context.drawImage(
+      sprite,
+      this.imageX,
+      this.imageY,
+      this.imageWidth,
+      this.imageHeight,
+      this.canvasX - (this.imageWidth / 2) * this.zoom,
+      this.canvasY - YPositionRegulator,
+      this.imageWidth * this.zoom,
+      this.imageHeight * this.zoom,
+    );
+  }
+}
+
+class Score {
+  constructor(best = localStorage.getItem("bestScore"), currenValue = 0 || 0) {
+    this.best = best;
+    this.currenValue = currenValue;
+  }
+  draw() {
+    const XPositionRegulator = 50;
+    const YCurrentPositionRegulator = 22;
+    const YBestPositionRegulator = 75;
+    const XPositionInGameRegulator = 110;
+    const YPositionInGameRegulator = 32;
+    if (gameStates.current == gameStates.inGame) {
+      context.lineWidth = 5;
+      context.font = "25px IMPACT";
+      context.strokeStyle = "#000000";
+      context.fillStyle = "#ffffff";
+      context.strokeText(
+        `${this.currenValue} m`,
+        XPositionInGameRegulator,
+        YPositionInGameRegulator,
+      );
+      context.fillText(
+        `${this.currenValue} m`,
+        XPositionInGameRegulator,
+        YPositionInGameRegulator,
+      );
+      context.stroke();
+      context.fill();
+    } else if (gameStates.current == gameStates.gameOver) {
+      context.lineWidth = 5;
+      context.font = "25px IMPACT";
+      context.strokeStyle = "#000000";
+      context.fillStyle = "#00fffb";
+      context.strokeText(
+        `${this.currenValue} m`,
+        canvas.width / 2 + XPositionRegulator,
+        canvas.height / 2 + YCurrentPositionRegulator,
+      );
+      context.fillText(
+        `${this.currenValue} m`,
+        canvas.width / 2 + XPositionRegulator,
+        canvas.height / 2 + YCurrentPositionRegulator,
+      );
+      context.stroke();
+      context.fill();
+      context.strokeText(
+        `${this.best} m`,
+        canvas.width / 2 + XPositionRegulator,
+        canvas.height / 2 + YBestPositionRegulator,
+      );
+      context.fillText(
+        `${this.best} m`,
+        canvas.width / 2 + XPositionRegulator,
+        canvas.height / 2 + YBestPositionRegulator,
+      );
+      context.stroke();
+      context.fill();
+    }
+  }
+
+  update() {
+    if (frames % 10 === 0) {
+      score.currenValue += 1;
+      score.best = Math.max(score.best, score.currenValue);
+      localStorage.setItem("bestScore", score.best);
+    }
+    this.draw();
+  }
+}
+
+class SideScoreShow {
+  constructor(
+    imageX = 244,
+    imageY = 173,
+    imageWidth = 40,
+    imageHeight = 14,
+    canvasX = 60,
+    canvasY = 10,
+    zoom = 2,
+  ) {
+    this.imageX = imageX;
+    this.imageY = imageY;
+    this.imageWidth = imageWidth;
+    this.imageHeight = imageHeight;
+    this.canvasX = canvasX;
+    this.canvasY = canvasY;
+    this.zoom = zoom;
+  }
+  draw() {
+    const YPositionRegulator = 85;
+
     context.drawImage(
       sprite,
       this.imageX,
@@ -488,7 +602,7 @@ class ScoreChart {
     imageHeight = 58,
     canvasX = canvas.width / 2,
     canvasY = canvas.height / 2,
-    zoom = 1.5,
+    zoom = 2.5,
   ) {
     this.imageX = imageX;
     this.imageY = imageY;
@@ -496,10 +610,10 @@ class ScoreChart {
     this.imageHeight = imageHeight;
     this.canvasX = canvasX;
     this.canvasY = canvasY;
-    this.spaceFromGameOver = 40;
     this.zoom = zoom;
   }
   draw() {
+    const spaceFromGameOver = 40;
     context.drawImage(
       sprite,
       this.imageX,
@@ -507,7 +621,7 @@ class ScoreChart {
       this.imageWidth,
       this.imageHeight,
       this.canvasX - (this.imageWidth * this.zoom) / 2,
-      this.canvasY + this.spaceFromGameOver,
+      this.canvasY - spaceFromGameOver,
       this.imageWidth * this.zoom,
       this.imageHeight * this.zoom,
     );
@@ -524,6 +638,8 @@ let tap = new Tap();
 let scoreChart = new ScoreChart();
 let startButton = new StartButton();
 let pipes = new Pipes();
+let sideScoreShow = new SideScoreShow();
+let score = new Score();
 
 function clickHandler() {
   switch (gameStates.current) {
@@ -531,6 +647,7 @@ function clickHandler() {
       gameStates.current = gameStates.inGame;
       bird = new Bird();
       pipes = new Pipes();
+      score.currenValue = 0;
       bird.yVelocity = -bird.jump * bird.airResistance;
       break;
     case gameStates.inGame:
@@ -565,6 +682,8 @@ function animate() {
       bird.update();
       pipes.update();
       foreground.update();
+      sideScoreShow.draw();
+      score.update();
       frames += 1;
       break;
     case gameStates.gameOver:
@@ -573,6 +692,7 @@ function animate() {
       bird.draw();
       gameOver.draw();
       scoreChart.draw();
+      score.draw();
       startButton.draw();
       break;
   }
