@@ -203,7 +203,7 @@ class Bird {
     //   this.rotation = 0;
     //   console.log(this.rotation);
     // }
-    this.rotation += degree;
+    // this.rotation += degree;
 
     if (this.yVelocity + this.imageHeight + this.canvasY > foreground.canvasY) {
       this.canvasY = foreground.canvasY - this.imageHeight; // aligning with borders
@@ -212,6 +212,18 @@ class Bird {
       // this.rotation = 0;
       this.canvasY = 10;
       gameStates.current = gameStates.gameOver;
+    }
+
+    const degreeBooster = 4;
+    const RadianTilt = 0.2;
+    const RadianGroundAngle = 1.5;
+    if (gameStates.current == gameStates.inGame && this.rotation < RadianTilt) {
+      this.rotation += degree;
+    } else if (
+      gameStates.current == gameStates.gameOver &&
+      this.rotation < RadianGroundAngle
+    ) {
+      this.rotation += degree * degreeBooster;
     }
     this.draw();
   }
@@ -337,14 +349,14 @@ class Pipes {
           gameStates.current = gameStates.gameOver;
           return true;
         }
-        if (birdLeft == pipeRight) {
-          score.currenValue += 1;
-        }
       }
     });
 
-    if (this.pipePosition.length > 0 && this.pipePosition[0].x < -100) {
+    if (this.pipePosition.length > 0 && this.pipePosition[0].x < -50) {
       this.pipePosition.shift();
+      score.currenValue += 1;
+      score.best = Math.max(score.best, score.currenValue);
+      localStorage.setItem("bestScore", score.best);
     }
     this.draw();
   }
@@ -506,12 +518,12 @@ class Score {
       context.strokeStyle = "#000000";
       context.fillStyle = "#ffffff";
       context.strokeText(
-        `${this.currenValue} m`,
+        `${this.currenValue}`,
         XPositionInGameRegulator,
         YPositionInGameRegulator,
       );
       context.fillText(
-        `${this.currenValue} m`,
+        `${this.currenValue}`,
         XPositionInGameRegulator,
         YPositionInGameRegulator,
       );
@@ -523,24 +535,24 @@ class Score {
       context.strokeStyle = "#000000";
       context.fillStyle = "#00fffb";
       context.strokeText(
-        `${this.currenValue} m`,
+        `${this.currenValue}`,
         canvas.width / 2 + XPositionRegulator,
         canvas.height / 2 + YCurrentPositionRegulator,
       );
       context.fillText(
-        `${this.currenValue} m`,
+        `${this.currenValue}`,
         canvas.width / 2 + XPositionRegulator,
         canvas.height / 2 + YCurrentPositionRegulator,
       );
       context.stroke();
       context.fill();
       context.strokeText(
-        `${this.best} m`,
+        `${this.best}`,
         canvas.width / 2 + XPositionRegulator,
         canvas.height / 2 + YBestPositionRegulator,
       );
       context.fillText(
-        `${this.best} m`,
+        `${this.best}`,
         canvas.width / 2 + XPositionRegulator,
         canvas.height / 2 + YBestPositionRegulator,
       );
@@ -550,7 +562,7 @@ class Score {
   }
 
   update() {
-    if (frames % 10 === 0) {
+    if (frames % 240 === 0) {
       score.currenValue += 1;
       score.best = Math.max(score.best, score.currenValue);
       localStorage.setItem("bestScore", score.best);
@@ -628,6 +640,10 @@ class ScoreChart {
   }
 }
 
+class Audio {
+  constructor() {}
+}
+
 // let bird = n ew Bird();
 let background = new Background();
 let backgroundImage = new BackgroundImage();
@@ -683,13 +699,13 @@ function animate() {
       pipes.update();
       foreground.update();
       sideScoreShow.draw();
-      score.update();
+      score.draw();
       frames += 1;
       break;
     case gameStates.gameOver:
       pipes.draw();
       foreground.draw();
-      bird.draw();
+      bird.update();
       gameOver.draw();
       scoreChart.draw();
       score.draw();
