@@ -185,9 +185,11 @@ class Bird {
     }
     */
     //  second way:
-    this.birdImageIndex += frames % 10 === 0 ? 1 : 0;
-    this.birdImageIndex =
-      this.birdImageIndex % this.birdImagesCoordinates.length;
+    if (gameStates.current == gameStates.inGame) {
+      this.birdImageIndex += frames % 10 === 0 ? 1 : 0;
+      this.birdImageIndex =
+        this.birdImageIndex % this.birdImagesCoordinates.length;
+    }
 
     this.yVelocity += this.gravityPower;
     this.canvasY += this.yVelocity;
@@ -203,15 +205,35 @@ class Bird {
     //   this.rotation = 0;
     //   console.log(this.rotation);
     // }
-    this.rotation += degree;
+    // this.rotation += degree;
 
     if (this.yVelocity + this.imageHeight + this.canvasY > foreground.canvasY) {
       this.canvasY = foreground.canvasY - this.imageHeight; // aligning with borders
-      gameStates.current = gameStates.gameOver;
-    } else if (this.canvasY - this.yVelocity - this.imageHeight <= 0) {
-      // this.rotation = 0;
+      if (gameStates.current == gameStates.inGame) {
+        triggerGameOver();
+      }
+    } else if (this.canvasY <= 0) {
+      this.yVelocity = 0;
       this.canvasY = 10;
-      gameStates.current = gameStates.gameOver;
+      triggerGameOver();
+      // hit.play();
+      // setTimeout(() => {
+      //   die.play();
+      // }, 300);
+    }
+
+    const degreeBooster = 6;
+    const RadianTilt = 0.2;
+    const RadianGroundAngle = 1.5;
+    if (gameStates.current == gameStates.inGame && this.rotation < RadianTilt) {
+      this.rotation += degree;
+    } else if (
+      gameStates.current == gameStates.gameOver &&
+      this.rotation < RadianGroundAngle
+    ) {
+      // this.yVelocity += this.gravityPower;
+      // this.canvasY += this.yVelocity;
+      this.rotation += degree * degreeBooster;
     }
     this.draw();
   }
@@ -334,17 +356,17 @@ class Pipes {
         const isHitBottomPipe = birdBottom >= bottomPipeTop;
 
         if (isHitTopPipe || isHitBottomPipe) {
-          gameStates.current = gameStates.gameOver;
-          return true;
-        }
-        if (birdLeft == pipeRight) {
-          score.currenValue += 1;
+          triggerGameOver();
         }
       }
     });
 
-    if (this.pipePosition.length > 0 && this.pipePosition[0].x < -100) {
+    if (this.pipePosition.length > 0 && this.pipePosition[0].x < -50) {
       this.pipePosition.shift();
+      score.currenValue += 1;
+      score.best = Math.max(score.best, score.currenValue);
+      localStorage.setItem("bestScore", score.best);
+      point.play();
     }
     this.draw();
   }
@@ -495,7 +517,7 @@ class Score {
     this.currenValue = currenValue;
   }
   draw() {
-    const XPositionRegulator = 50;
+    const XPositionRegulator = 70;
     const YCurrentPositionRegulator = 22;
     const YBestPositionRegulator = 75;
     const XPositionInGameRegulator = 110;
@@ -506,12 +528,12 @@ class Score {
       context.strokeStyle = "#000000";
       context.fillStyle = "#ffffff";
       context.strokeText(
-        `${this.currenValue} m`,
+        `${this.currenValue}`,
         XPositionInGameRegulator,
         YPositionInGameRegulator,
       );
       context.fillText(
-        `${this.currenValue} m`,
+        `${this.currenValue}`,
         XPositionInGameRegulator,
         YPositionInGameRegulator,
       );
@@ -521,26 +543,26 @@ class Score {
       context.lineWidth = 5;
       context.font = "25px IMPACT";
       context.strokeStyle = "#000000";
-      context.fillStyle = "#00fffb";
+      context.fillStyle = "#ffffff";
       context.strokeText(
-        `${this.currenValue} m`,
+        `${this.currenValue}`,
         canvas.width / 2 + XPositionRegulator,
         canvas.height / 2 + YCurrentPositionRegulator,
       );
       context.fillText(
-        `${this.currenValue} m`,
+        `${this.currenValue}`,
         canvas.width / 2 + XPositionRegulator,
         canvas.height / 2 + YCurrentPositionRegulator,
       );
       context.stroke();
       context.fill();
       context.strokeText(
-        `${this.best} m`,
+        `${this.best}`,
         canvas.width / 2 + XPositionRegulator,
         canvas.height / 2 + YBestPositionRegulator,
       );
       context.fillText(
-        `${this.best} m`,
+        `${this.best}`,
         canvas.width / 2 + XPositionRegulator,
         canvas.height / 2 + YBestPositionRegulator,
       );
@@ -550,7 +572,7 @@ class Score {
   }
 
   update() {
-    if (frames % 10 === 0) {
+    if (frames % 240 === 0) {
       score.currenValue += 1;
       score.best = Math.max(score.best, score.currenValue);
       localStorage.setItem("bestScore", score.best);
@@ -628,6 +650,17 @@ class ScoreChart {
   }
 }
 
+const die = new Audio();
+const hit = new Audio();
+const point = new Audio();
+const wing = new Audio();
+const swooshing = new Audio();
+die.src = "./audio/die.mp3";
+hit.src = "./audio/hit.mp3";
+point.src = "./audio/point.mp3";
+wing.src = "./audio/wing.flac";
+swooshing.src = "./audio/swooshing.mp3";
+
 // let bird = n ew Bird();
 let background = new Background();
 let backgroundImage = new BackgroundImage();
@@ -641,9 +674,20 @@ let pipes = new Pipes();
 let sideScoreShow = new SideScoreShow();
 let score = new Score();
 
+function triggerGameOver() {
+  if (gameStates.current !== gameStates.gameOver) {
+    gameStates.current = gameStates.gameOver;
+    hit.play();
+    setTimeout(() => {
+      die.play();
+    }, 300);
+  }
+}
+
 function clickHandler() {
   switch (gameStates.current) {
     case gameStates.getReady:
+      swooshing.play();
       gameStates.current = gameStates.inGame;
       bird = new Bird();
       pipes = new Pipes();
@@ -653,6 +697,8 @@ function clickHandler() {
     case gameStates.inGame:
       bird.rotation = -degree * 35;
       bird.yVelocity = -bird.jump * bird.airResistance;
+      wing.currentTime = 0;
+      wing.play();
       break;
     case gameStates.gameOver:
       gameStates.current = gameStates.getReady;
@@ -683,13 +729,13 @@ function animate() {
       pipes.update();
       foreground.update();
       sideScoreShow.draw();
-      score.update();
+      score.draw();
       frames += 1;
       break;
     case gameStates.gameOver:
       pipes.draw();
       foreground.draw();
-      bird.draw();
+      bird.update();
       gameOver.draw();
       scoreChart.draw();
       score.draw();
